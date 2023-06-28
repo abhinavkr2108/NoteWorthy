@@ -1,31 +1,37 @@
 import { Modal, StyleSheet, StatusBar, Text, View, TextInput, TouchableOpacity } from 'react-native'
-import React,{useState} from 'react'
+import React,{useState, useEffect} from 'react'
 import Colors from '../misc/Colors'
 import { Button, Snackbar } from 'react-native-paper';
 import Toast from 'react-native-toast-message'
 import { AntDesign } from '@expo/vector-icons';
 
-const InputModal = ({visible, onClose, onSubmit}) => {
+const InputModal = ({visible, onClose, onSubmit, isEdit, note}) => {
 
     const [title, setTitle] = useState("");
     const [desc, setDesc] = useState("");
 
     const handleTextChange = (text, valueFor) => {
         if(valueFor==="title") setTitle(text)
-        if(valueFor==="desc") setDesc(text)
+        if(valueFor==="description") setDesc(text)
     }
     const handleSubmit = () =>{
-        if(!title){
-            Toast.show({
-                type: 'error',
-                text1: 'Please Enter Title'
-              });
+        
+        if (isEdit) {
+            onSubmit(title, desc, Date.now())
+        }else{
+            onSubmit(title, desc);
+            setTitle("");
+            setDesc("");
         }
-        onSubmit(title, desc);
-        setTitle("");
-        setDesc("");
+       
         onClose();
     }
+    useEffect(()=>{
+        if(isEdit===true){
+            setTitle(note.title)
+            setDesc(note.description)
+        }
+    },[isEdit])
   return (
     <>
     <View>
@@ -47,7 +53,7 @@ const InputModal = ({visible, onClose, onSubmit}) => {
                 <TextInput
                     value={desc}
                     multiline
-                    onChangeText={(text)=> handleTextChange(text, "desc")}
+                    onChangeText={(text)=> handleTextChange(text, "description")}
                     placeholder="Description"
                     style={styles.noteDescription}
                 />

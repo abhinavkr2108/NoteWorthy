@@ -18,7 +18,7 @@ export default Searchbar
 
 const styles = StyleSheet.create({
     container:{
-        zIndex: 1,
+        // zIndex: 1,
     },
     searchBar:{
         borderWidth: 1,

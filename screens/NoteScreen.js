@@ -1,15 +1,21 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import React,{useState, useEffect} from 'react'
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import React,{useState, useEffect, useContext} from 'react'
 import { StatusBar } from 'expo-status-bar';
 import Colors from '../misc/Colors';
 import { AntDesign } from '@expo/vector-icons';
 import Searchbar from '../components/Searchbar';
 import InputModal from '../components/InputModal';
 import { FA5Style } from '@expo/vector-icons/build/FontAwesome5';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Note from '../components/Note';
+import { useNotes } from '../context/NoteProvider';
 
-const NoteScreen = ({user}) => {
+
+const NoteScreen = ({user, navigation}) => {
     const [greeting, setGreeting] = useState("Morning");
-    const [modalVisible, setModalVisible] = useState(false)
+    const [modalVisible, setModalVisible] = useState(false);
+    const {notes, setNotes} = useNotes()
+   
 
     const greetUser = () => {
         const hours = new Date().getHours()
@@ -17,23 +23,57 @@ const NoteScreen = ({user}) => {
         if(hours===12 || hours<17) return setGreeting("Afternoon");
         setGreeting("Evening");
     }
+
+    const openNote = (note) =>{
+        navigation.navigate('NoteDetail', {note})
+    }
     useEffect(()=>{
-        greetUser()
+        greetUser();
+        // AsyncStorage.clear();
     },[])
 
-    const handleOnSubmit = (title, desc) => {
-        console.log(title,desc);
-    }
+    const handleOnSubmit = async (title, desc) => {
+        const time = new Date().getTime();
+        const note = {
+            id: Date.now(),
+            title: title,
+            description: desc,
+            time: time,
+        };
+        const updatedNotes = [...notes, note];
+        setNotes(updatedNotes);
+        await AsyncStorage.setItem('notes', JSON.stringify(updatedNotes))
+    };
 
 
   return (
-    <>
-        <StatusBar barStyle='dark-content' backgroundColor={Colors.LIGHT}/>
+    
         <View style={styles.container}>
             <Text style={styles.greeting}>{`Good ${greeting}, ${user.name}`}</Text>
+
             <Searchbar/>
-            <View style={[StyleSheet.absoluteFillObject, styles.addNoteContainer]}>
-                <Text style={styles.addNoteText}>Add Notes</Text>
+            <FlatList
+                data={notes}
+                key={item => item.id}
+                numColumns={2}
+                columnWrapperStyle={
+                    {   justifyContent: 'space-between',
+                        marginBottom: 10
+                    }
+                }
+                keyExtractor={item => item.id.toString()}
+                renderItem={({item})=> <Note item={item} onPress={()=> openNote(item)}/>}
+            />
+            {
+                !notes.length ? (
+                    <View style={[StyleSheet.absoluteFillObject, styles.addNoteContainer]}>
+                        <Text style={styles.addNoteText}>Add Notes</Text> 
+                    </View>
+                ) : null
+            }
+
+            
+            <View>
                 <TouchableOpacity 
                     style={styles.btnAddNote}
                     onPress={() => setModalVisible(true)}
@@ -41,13 +81,15 @@ const NoteScreen = ({user}) => {
                     <AntDesign name="plus" size={24} color="white" />
                 </TouchableOpacity>
             </View>
-           
-        </View>
-        <InputModal 
+            
+            <InputModal 
             visible={modalVisible} 
             onClose={() => setModalVisible(false)}
             onSubmit={handleOnSubmit}/>
-    </>
+           
+        </View>
+    
+        
    
   )
 }
@@ -59,7 +101,6 @@ const styles = StyleSheet.create({
         flex: 1,
         marginTop: 30,
         marginHorizontal: 20,
-        zIndex: 1,
     },
     greeting:{
         fontSize: 23,
@@ -68,7 +109,7 @@ const styles = StyleSheet.create({
     addNoteContainer:{
         flex:1,
         justifyContent: "center",
-        alignItems: "center",
+        
     },
     addNoteText:{
         fontSize: 20,
