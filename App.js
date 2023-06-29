@@ -13,11 +13,16 @@ import NoteProvider from './context/NoteProvider';
 const Stack = createNativeStackNavigator();
 export default function App() {
   const [user, setUser] = useState({})
+  const [appFirsttime, setAppFirsttime] = useState(false)
+
   const getUser = async () =>{
     const result = await AsyncStorage.getItem('user')
-    if(result!==null){
-      setUser(JSON.parse(result))
-    }
+
+    if( result===null) return setAppFirsttime(true)
+    
+    setUser(JSON.parse(result))
+    setAppFirsttime(false)
+    
     
   }
   
@@ -30,7 +35,7 @@ export default function App() {
   
 
   
-  if(!user.name) return <Intro onFinish={getUser}/>
+  if(appFirsttime) return <Intro onFinish={getUser}/>
   return (
     // <NoteScreen  user={user}/>
     <NavigationContainer>

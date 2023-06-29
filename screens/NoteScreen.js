@@ -9,12 +9,16 @@ import { FA5Style } from '@expo/vector-icons/build/FontAwesome5';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Note from '../components/Note';
 import { useNotes } from '../context/NoteProvider';
+import NotFound from '../components/NotFound';
 
 
 const NoteScreen = ({user, navigation}) => {
     const [greeting, setGreeting] = useState("Morning");
     const [modalVisible, setModalVisible] = useState(false);
-    const {notes, setNotes} = useNotes()
+    const {notes, setNotes, getNotes} = useNotes()
+    const [searchQuery, setSearchQuery] = useState("")
+    const [notFound, setNotFound] = useState(false)
+
    
 
     const greetUser = () => {
@@ -45,14 +49,39 @@ const NoteScreen = ({user, navigation}) => {
         await AsyncStorage.setItem('notes', JSON.stringify(updatedNotes))
     };
 
+    const handleSearch = async (text) =>{
+        setSearchQuery(text)
+        if(!text.trim()){
+            setSearchQuery("")
+            setNotFound(false)
+            return await getNotes();
+        }
+        
+        const filteredNotes = notes.filter(note => {
+            if (note.title.toLowerCase().includes(text.toLowerCase())) {
+                return note;
+            }
+        })
+        if(filteredNotes.length){
+            setNotes([...filteredNotes])
+        }else{
+            setNotFound(true)
+        }
+    }
+
 
   return (
     
         <View style={styles.container}>
             <Text style={styles.greeting}>{`Good ${greeting}, ${user.name}`}</Text>
 
-            <Searchbar/>
-            <FlatList
+            <Searchbar
+                value={searchQuery}
+                onChangeText={handleSearch}
+            />
+            {
+                notFound==true ? <NotFound/> :
+                <FlatList
                 data={notes}
                 key={item => item.id}
                 numColumns={2}
@@ -63,7 +92,9 @@ const NoteScreen = ({user, navigation}) => {
                 }
                 keyExtractor={item => item.id.toString()}
                 renderItem={({item})=> <Note item={item} onPress={()=> openNote(item)}/>}
-            />
+                />
+            }
+            
             {
                 !notes.length ? (
                     <View style={[StyleSheet.absoluteFillObject, styles.addNoteContainer]}>
@@ -109,6 +140,7 @@ const styles = StyleSheet.create({
     addNoteContainer:{
         flex:1,
         justifyContent: "center",
+        alignItems: "center",
         
     },
     addNoteText:{
